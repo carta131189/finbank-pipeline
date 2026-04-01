@@ -1,0 +1,32 @@
+generation:
+  seed: 42
+  date_start: "2024-01-01"
+  date_end: "2024-12-31"
+
+volumes:
+  TB_CLIENTES_CORE: 10000
+  TB_PRODUCTOS_CAT: 50
+  TB_MOV_FINANCIEROS: 500000
+  TB_OBLIGACIONES: 30000
+  TB_SUCURSALES_RED: 200
+  TB_COMISIONES_LOG: 80000
+
+output:
+  formats:
+    - csv
+    - parquet
+  directory: "./output"
+
+anomalies:
+  duplicate_transactions: 150        # registros duplicados en TB_MOV_FINANCIEROS
+  out_of_range_dates: 80             # fechas fuera del rango en TB_MOV_FINANCIEROS
+  inconsistent_mora_records: 100     # obligaciones con dias_mora_act negativo o inconsistente
+
+null_rate: 0.05  # 5% de nulos en campos no críticos
+
+database:
+  # Configurar via variables de entorno o Azure Key Vault
+  # AZURE_SQL_SERVER, AZURE_SQL_DATABASE, AZURE_SQL_USER, AZURE_SQL_PASSWORD
+  driver: "ODBC Driver 18 for SQL Server"
+  encrypt: true
+  trust_server_certificate: false
