@@ -1,6 +1,6 @@
 # CHANGELOG — FinBank S.A. Pipeline de Datos
 
-## [1.0.0] — 2026-03-31
+## [1.0.0] — 2026-04-02
 
 **Autor:** Johan Cartagena 
 **Descripción:** Versión inicial del pipeline de datos Medallón para FinBank S.A.
@@ -14,7 +14,7 @@
 - Infraestructura como Código con Terraform: Resource Group, ADLS Gen2 con contenedores bronze/silver/gold/errors, Databricks Workspace Premium, Azure Key Vault con purge protection, Log Analytics Workspace y Action Group con alertas
 - Módulos Terraform separados por recurso con soporte para entornos dev y prod
 - Backend remoto del estado Terraform en Azure Storage (terraform.tfstate excluido del repo)
-- Pipeline Bronze: ingesta incremental con watermarks, 3 columnas de auditoría, particionamiento por año/mes/día, modo MERGE idempotente, log de ejecución  persistido en Delta
+- Pipeline Bronze: ingesta incremental con watermarks, 3 columnas de auditoría, particionamiento por año/mes/día, modo MERGE idempotente, log de ejecución persistido en Delta
 - Pipeline Silver: deduplicación, validación de campos obligatorios, integridad referencial con tabla de errores documentada, enmascaramiento SHA-256 de PII (nomb_cli, apell_cli, num_doc), cálculo de ind_sospechoso con ventana estadística de 30 días (3σ), flag ind_horario_habil, reporte de calidad por batch
 - Pipeline Gold: 4 dimensiones (dim_clientes, dim_productos, dim_geografia, dim_canal) y 4 tablas de hechos/KPIs (fact_transacciones, fact_cartera, fact_rentabilidad_cliente, kpis_diarios_cartera) con reglas de negocio completas
 - Regla bucket_mora en 5 rangos: AL_DIA, RANGO_1, RANGO_2, RANGO_3, DETERIORADO
@@ -30,8 +30,8 @@
 - Vistas de enmascaramiento dinámico en Gold para rol Analista (sin acceso a PII)
 - Catálogo de datos completo con linaje documentado de campos calculados
 - CI/CD con GitHub Actions: lint, validación Terraform, escaneo de secretos, despliegue automático
-- README con avances
-- CHANGELOG.md con avances
+- README completo con instrucciones paso a paso reproducibles
+- CHANGELOG.md completo
 
 ### Infraestructura
 
@@ -45,10 +45,6 @@
 
 ## [Próximas versiones — Backlog]
 
-### Planificado para [1.1.0]
+### Planificado para [1.3.0]
 
-- Documentacion
-
-### Planificado para [1.2.0]
-
-- Pasos de ejecucion del proyecto
+### Planificado para [1.4.0]

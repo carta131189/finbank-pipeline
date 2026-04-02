@@ -1,0 +1,67 @@
+# FinBank Pipeline — .gitignore raíz
+
+# ─── Python ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Datos generados (no versionar datos reales) ──
+data-generation/output/
+*.parquet
+*.csv
+# Excepción: config.yaml sí se versiona
+!data-generation/config.yaml
+
+# ─── Terraform ───────────────────────────────────
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+crash.log
+crash.*.log
+infra/**/*.auto.tfvars   # archivos de variables con secretos
+
+# ─── Secrets y credenciales (NUNCA versionar) ────
+*.env
+.env.*
+secrets.yaml
+secrets.json
+credentials.json
+service_account*.json
+*_credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ─── IDEs ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Databricks ───────────────────────────────────
+.databricks/
+*.dbc
+
+# ─── Logs ─────────────────────────────────────────
+*.log
+logs/

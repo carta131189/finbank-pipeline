@@ -1,6 +1,6 @@
 # FinBank S.A. — Pipeline de Datos Medallón en Azure
 
-**Sector:** Banca Digital  
+**Sector:** ESCENARIO A — BANCA Y SERVICIOS FINANCIEROS 
 **Plataforma:** Microsoft Azure  
 **Orquestador:** Databricks Workflows  
 **IaC:** Terraform 1.6+  
@@ -62,6 +62,9 @@ finbank-pipeline/
 │   ├── finbank_workflow.json           # Definición del DAG Databricks
 │   ├── pipeline_summary_notification.py
 │   └── deploy_workflow.py             # Script de despliegue via API
+├── docs/
+│   ├── data_catalog.md                # Catálogo completo de tablas
+│   └── architecture.md               # Diagrama y descripción de arquitectura
 ├── .github/
 │   └── workflows/
 │       └── cicd.yml                   # Pipeline CI/CD GitHub Actions
@@ -71,30 +74,39 @@ finbank-pipeline/
 
 ---
 
-
-##  Objetivo
-
-Construir un pipeline end-to-end que permita:
-- Análisis de riesgo crediticio
-- Detección de fraude
-- Cálculo de CLTV
-- KPIs regulatorios
-
-
-##  Arquitectura
-
-- Bronze: datos crudos
-- Silver: datos limpios y validados
-- Gold: modelo analítico
-
-
 ##  Estado actual
-✔ Estructura del proyecto creada  
-✔ Generación de datos sintéticos en desarrollo  
-✔ Creacion de arquitectura en medallon 
-✔ Creacion y ejecucion de pipeline y GitHub Actions
+✔ Desarrollo completo del proyecto
 
+---
 
-##  Próximos pasos
-- Completar documentacion
-- Ajustes necesario
+## Guía de despliegue paso a paso
+
+### Paso 1 — Clonar el repositorio
+### Paso 2 — Autenticarse en Azure
+### Paso 3 — Inicializar el backend remoto de Terraform
+### Paso 4 — Inicializar y aplicar Terraform
+### Paso 5 — Cargar secretos en Azure Key Vault
+### Paso 6 — Generar los datos sintéticos
+### Paso 7 — Cargar datos en Azure SQL Database
+### Paso 8 — Configurar Databricks
+#### 8.1 Crear el scope de secretos vinculado a Key Vault
+#### 8.2 Configurar acceso del cluster al ADLS Gen2 (Managed Identity)
+#### 8.3 Subir los notebooks al workspace
+### Paso 9 — Desplegar el workflow de Databricks
+### Paso 10 — Configurar roles RBAC
+### Paso 11 — Verificar el pipeline
+### Paso 12 — Configurar CI/CD
+
+## Preguntas frecuentes
+
+**¿Qué pasa si ejecuto el pipeline dos veces sobre los mismos datos?**  
+El MERGE sobre la clave primaria en cada capa garantiza idempotencia. No se generan duplicados.
+
+**¿Cómo agrego un nuevo miembro al equipo con rol Analista?**  
+En Azure AD, agrega al usuario al grupo `finbank_analyst`. La sincronización SCIM propagará el acceso al workspace de Databricks automáticamente. El usuario solo verá las tablas Gold y la vista `vw_dim_clientes_analista` (sin PII).
+
+**¿Cómo cambio el email de alertas?**  
+Actualiza el secreto `alert-email-to` en Key Vault: `az keyvault secret set --vault-name $KV_NAME --name "alert-email-to" --value "nuevo@email.com"`. No requiere redespliegue de infraestructura.
+
+**¿Dónde veo los registros rechazados por integridad referencial?**  
+En la tabla Delta `errors/referential_integrity_errors` en el contenedor errors del ADLS. Cada registro incluye la tabla de origen, el motivo del rechazo y el batch_id.

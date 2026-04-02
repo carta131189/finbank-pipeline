@@ -40,6 +40,6 @@ az storage container create \
   --auth-mode login
 
 echo ""
-echo "✅ Backend remoto listo."
+echo "   Backend remoto listo."
 echo "   Ejecuta ahora:"
 echo "   cd infra && terraform init -backend-config=environments/${ENVIRONMENT}/backend.conf"
