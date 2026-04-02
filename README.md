@@ -29,14 +29,42 @@ Proyecto de ingeniería de datos basado en arquitectura Medallion (Bronze, Silve
 
 ```
 finbank-pipeline/
-├── data-generation/             
+├── data-generation/
 │   ├── generate_data.py         # Generador de datos sintéticos
+│   ├── load_to_sql.py           # Cargador a Azure SQL Database
 │   ├── config.yaml              # Parámetros de generación centralizados
-│   ├── requirements.txt
+│   └── requirements.txt
 ├── infra/
+│   ├── main.tf                  # Configuración principal de Terraform
+│   ├── variables.tf             # Definición de variables
+│   ├── outputs.tf               # Exports de recursos creados
+│   ├── bootstrap_backend.sh     # Script de inicialización (ejecutar 1 vez)
+│   ├── .gitignore               # Excluye terraform.tfstate del repo
+│   ├── modules/
+│   │   ├── adls/                # ADLS Gen2 + contenedores Medallón
+│   │   ├── databricks/          # Workspace Databricks
+│   │   ├── keyvault/            # Azure Key Vault + secretos placeholder
+│   │   └── monitoring/          # Log Analytics + Action Group + Alertas
+│   └── environments/
+│       ├── dev/terraform.tfvars
+│       └── prod/terraform.tfvars
 ├── pipelines/
+│   ├── bronze/
+│   │   └── 01_bronze_ingestion.py
+│   ├── silver/
+│   │   └── 02_silver_processing.py
+│   ├── gold/
+│   │   └── 03_gold_processing.py
+│   ├── governance/
+│   │   └── rbac_setup.py
+│   └── quality_checks.py
 ├── orchestration/
-├── docs/
+│   ├── finbank_workflow.json           # Definición del DAG Databricks
+│   ├── pipeline_summary_notification.py
+│   └── deploy_workflow.py             # Script de despliegue via API
+├── .github/
+│   └── workflows/
+│       └── cicd.yml                   # Pipeline CI/CD GitHub Actions
 ├── README.md
 └── CHANGELOG.md
 ```
@@ -63,8 +91,10 @@ Construir un pipeline end-to-end que permita:
 ##  Estado actual
 ✔ Estructura del proyecto creada  
 ✔ Generación de datos sintéticos en desarrollo  
+✔ Creacion de arquitectura en medallon 
+✔ Creacion y ejecucion de pipeline y GitHub Actions
+
 
 ##  Próximos pasos
-- Completar data-generation
-- Implementar Bronze en ADF
-- Infraestructura con Terraform
+- Completar documentacion
+- Ajustes necesario

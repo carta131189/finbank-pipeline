@@ -1,0 +1,197 @@
+{
+  "name": "finbank_pipeline_medallion",
+  "description": "FinBank S.A. — Pipeline Medallón completo: Bronze → Silver → Gold → Quality Checks. Ejecutado diariamente a las 02:00 COT.",
+  "schedule": {
+    "quartz_cron_expression": "0 0 7 * * ?",
+    "timezone_id": "America/Bogota",
+    "pause_status": "UNPAUSED"
+  },
+  "max_concurrent_runs": 1,
+  "timeout_seconds": 14400,
+  "health": {
+    "rules": [
+      {
+        "metric": "RUN_DURATION_SECONDS",
+        "op": "GREATER_THAN",
+        "value": 10800
+      }
+    ]
+  },
+  "email_notifications": {
+    "on_start": [],
+    "on_success": ["data-engineering@finbank.com"],
+    "on_failure": ["data-engineering@finbank.com", "data-ops@finbank.com"],
+    "on_duration_warning_threshold_exceeded": ["data-engineering@finbank.com"],
+    "no_alert_for_skipped_runs": false
+  },
+  "webhook_notifications": {},
+  "notification_settings": {
+    "no_alert_for_skipped_runs": false,
+    "no_alert_for_canceled_runs": false
+  },
+  "tasks": [
+    {
+      "task_key": "bronze_ingestion",
+      "description": "Ingesta incremental desde Azure SQL Database hacia ADLS Gen2 Bronze (Delta Lake). Agrega columnas de auditoría y particiona por año/mes/día.",
+      "notebook_task": {
+        "notebook_path": "/Repos/finbank/pipelines/bronze/01_bronze_ingestion",
+        "source": "WORKSPACE",
+        "base_parameters": {}
+      },
+      "job_cluster_key": "finbank_cluster_bronze",
+      "timeout_seconds": 3600,
+      "retry_on_timeout": true,
+      "max_retries": 3,
+      "min_retry_interval_millis": 60000,
+      "depends_on": []
+    },
+    {
+      "task_key": "silver_processing",
+      "description": "Limpieza, deduplicación, integridad referencial, enmascaramiento PII y cálculo de ind_sospechoso.",
+      "notebook_task": {
+        "notebook_path": "/Repos/finbank/pipelines/silver/02_silver_processing",
+        "source": "WORKSPACE",
+        "base_parameters": {
+          "bronze_output": "{{tasks.bronze_ingestion.values.result}}"
+        }
+      },
+      "job_cluster_key": "finbank_cluster_main",
+      "timeout_seconds": 5400,
+      "retry_on_timeout": true,
+      "max_retries": 3,
+      "min_retry_interval_millis": 120000,
+      "depends_on": [
+        {
+          "task_key": "bronze_ingestion",
+          "outcome": "SUCCESS"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_processing",
+      "description": "Construcción del modelo dimensional: dims + facts + KPIs ejecutivos.",
+      "notebook_task": {
+        "notebook_path": "/Repos/finbank/pipelines/gold/03_gold_processing",
+        "source": "WORKSPACE",
+        "base_parameters": {
+          "silver_output": "{{tasks.silver_processing.values.result}}"
+        }
+      },
+      "job_cluster_key": "finbank_cluster_main",
+      "timeout_seconds": 5400,
+      "retry_on_timeout": true,
+      "max_retries": 3,
+      "min_retry_interval_millis": 120000,
+      "depends_on": [
+        {
+          "task_key": "silver_processing",
+          "outcome": "SUCCESS"
+        }
+      ]
+    },
+    {
+      "task_key": "quality_checks",
+      "description": "8 validaciones automatizadas sobre Silver y Gold. Alerta si algún check falla.",
+      "notebook_task": {
+        "notebook_path": "/Repos/finbank/pipelines/quality_checks",
+        "source": "WORKSPACE",
+        "base_parameters": {
+          "gold_output": "{{tasks.gold_processing.values.result}}"
+        }
+      },
+      "job_cluster_key": "finbank_cluster_bronze",
+      "timeout_seconds": 1800,
+      "retry_on_timeout": false,
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "depends_on": [
+        {
+          "task_key": "gold_processing",
+          "outcome": "SUCCESS"
+        }
+      ]
+    },
+    {
+      "task_key": "pipeline_summary_notification",
+      "description": "Genera y envía el reporte diario de ejecución al completarse el pipeline con éxito.",
+      "notebook_task": {
+        "notebook_path": "/Repos/finbank/orchestration/pipeline_summary_notification",
+        "source": "WORKSPACE",
+        "base_parameters": {
+          "bronze_output":  "{{tasks.bronze_ingestion.values.result}}",
+          "silver_output":  "{{tasks.silver_processing.values.result}}",
+          "gold_output":    "{{tasks.gold_processing.values.result}}",
+          "quality_output": "{{tasks.quality_checks.values.result}}"
+        }
+      },
+      "job_cluster_key": "finbank_cluster_bronze",
+      "timeout_seconds": 600,
+      "retry_on_timeout": false,
+      "max_retries": 2,
+      "min_retry_interval_millis": 30000,
+      "depends_on": [
+        {
+          "task_key": "quality_checks",
+          "outcome": "SUCCESS"
+        }
+      ]
+    }
+  ],
+  "job_clusters": [
+    {
+      "job_cluster_key": "finbank_cluster_main",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "autoscale": {
+          "min_workers": 2,
+          "max_workers": 8
+        },
+        "spark_conf": {
+          "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+          "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+          "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+          "spark.sql.shuffle.partitions": "200"
+        },
+        "azure_attributes": {
+          "availability": "ON_DEMAND_AZURE",
+          "first_on_demand": 1,
+          "spot_bid_max_price": -1
+        },
+        "init_scripts": [],
+        "spark_env_vars": {
+          "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+        },
+        "data_security_mode": "SINGLE_USER",
+        "runtime_engine": "PHOTON"
+      }
+    },
+    {
+      "job_cluster_key": "finbank_cluster_bronze",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+          "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog"
+        },
+        "azure_attributes": {
+          "availability": "ON_DEMAND_AZURE"
+        },
+        "data_security_mode": "SINGLE_USER",
+        "runtime_engine": "STANDARD"
+      }
+    }
+  ],
+  "run_as": {
+    "service_principal_name": "sp-finbank-pipeline"
+  },
+  "parameters": [],
+  "tags": {
+    "project":     "finbank",
+    "layer":       "orchestration",
+    "managed_by":  "databricks-workflows"
+  }
+}
