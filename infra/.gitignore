@@ -1,0 +1,28 @@
+# ============================================================
+# .gitignore para el directorio /infra
+# CRÍTICO: terraform.tfstate NUNCA debe aparecer en el repo
+# ============================================================
+
+# Estado de Terraform — siempre en backend remoto
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Directorio de trabajo de Terraform
+.terraform/
+.terraform.lock.hcl
+
+# Archivos de variables con secretos — NUNCA versionar
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Archivos de plan
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
